@@ -19,9 +19,10 @@ reservadas = {
 
 tokens = tokens + list(reservadas.values())
 
-t_ignore = '\t'
-t_LSPARENT = r'['
-t_RSPARENT = r']'
+
+t_ignore = ' \t'
+t_LSPARENT = r'\['
+t_RSPARENT = r'\]'
 t_COMMA = r','
 t_SEMICOLON = r';'
 t_COLON = r':'
@@ -29,11 +30,11 @@ t_VERTICALBAR = r'\|'
 
 def t_ID(t):
     r'[a-zA-Z][a-zA-Z0-9]*'
-    t.type = reservadas.get(t.value, 'ID')
-    t.value = t.value.upper()
-    #if t.value.upper() in tokens:
-    #    t.value = t.value.upper()
-    #    t.type = t.value
+    #t.type = reservadas.get(t.value, 'ID')
+    #t.value = t.value.upper()
+    if t.value.upper() in reservadas.keys():
+        t.value = t.value.upper()
+        t.type = t.value
 
     return t
 
@@ -44,7 +45,7 @@ def t_NUMBER(t):
 
 def t_error(t):
     print("Existen caracteres ilegales dentro del código ingresado '%s'" % t.value[0])
-    t.lexer.sikip(1)
+    t.lexer.skip(1)
 
 def buscarFicheros(directorio):
     ficheros = []
@@ -56,22 +57,37 @@ def buscarFicheros(directorio):
         ficheros.append(files)
 
     for file in files:
-        print(str(cont))+ ". " + file
+        print(cont)
+        print(str(cont)+ ". " + file)
         cont += 1
+
     while respuesta == False:
-        numArchivo = raw_input('\nNumero del test: ')
+        numArchivo = input('\nNumero del test: ')
         for file in files:
-            if file==files[int(numArchivo - 1)]:
+            if file == files[int(numArchivo) - 1]:
                 respuesta = True
                 break
-    print("Has escogido \'%s' \n" % files[int(numArchivo - 1)])  
+    print("Has escogido \'%s' \n" % files[int(numArchivo) - 1])  
 
-    return files[int(numArchivo - 1)]
+    return files[int(numArchivo) - 1]
 
-directorio = "C:\Users\santi\OneDrive\Documentos\Universidad\3er semestre\LyM\P0\test"
+directorio = "C:/Users/santi/OneDrive/Documentos/Universidad/3er semestre/LyM/P0/test/"
 
 
 archivo = buscarFicheros(directorio)
 test = directorio + archivo
+fp =codecs.open(test, "r", "utf-8")
+cadena = fp.read()
+fp.close()
+
+analizador = lex.lex()
+
+analizador.input(cadena)
+
+while True:
+    tok = analizador.token()
+    if not tok: break
+    print(tok)
+
 
 
