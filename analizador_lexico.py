@@ -71,7 +71,8 @@ def buscarFicheros(directorio):
 
     return files[int(numArchivo) - 1]
 
-directorio = "C:/Users/garav/OneDrive/Escritorio/LYM/test/"
+directorio = "C:/Users/santi/OneDrive/Documentos/Universidad/3er semestre/LyM/P0/ejemplo github/"
+#directorio = "C:/Users/garav/OneDrive/Escritorio/LYM/test/"
 
 
 archivo = buscarFicheros(directorio)
