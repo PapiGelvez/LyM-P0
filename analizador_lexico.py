@@ -14,7 +14,8 @@ reservadas = {
     'jumpToThe':'JUMPTOTHE', 'jumpInDir':'JUMPINDIR', 'nop':'NOP', 'if':'IF', 'while':'WHILE', 'then':'THEN',
     'else':'ELSE', 'do':'DO', 'repeat':'REPEAT', 'facing':'FACING', 'canPut':'CANPUT', 'canPick':'CANPICK',
     'canMoveInDir':'CANMOVEINDIR', 'canJumpInDir':'CANJUMPINDIR', 'canMoveToThe':'CANMOVETOTHE', 'canJumpToThe':'CANJUMPTOTHE',
-    'not':'NOT'
+    'not':'NOT', 'balloons':'BALLOONS', 'chips':'CHIPS', 'left':'LEFT', 'right':'RIGHT', 'around':'AROUND',
+     'north':'NORTH', 'south':'SOUTH','east':'EAST', 'west':'WEST','front':'FRONT','back':'BACK'
 }
 
 tokens = tokens + list(reservadas.values())
@@ -89,25 +90,53 @@ while True:
     tok = analizador.token()
     if not tok: break
     tokens_doc.append(tok)
-    
+
+procedict = {}
+commands = ['ASSIGNTOCOLONNUMBERCOMMAID', 'GOTOCOLONIDCOMMANUMBER', 'GOTOCOLONNUMBERCOMMAID', 
+            'GOTOCOLONIDCOMMAID', 'GOTOCOLONNUMBERCOMMANUMBER','MOVECOLONNUMBER','TURNCOLONLEFT',
+            'TURNCOLONRIGHT','TURNCOLONAROUND','FACECOLONNORTH','FACECOLONSOUTH','FACECOLONEAST',
+            'FACECOLONWEST','PUTCOLONNUMBERCOMMABALLOONS','PUTCOLONNUMBERCOMMACHIPS','PUTCOLONIDCOMMABALLOONS',
+            'PUTCOLONIDCOMMACHIPS','PICKCOLONNUMBERCOMMABALLOONS','PICKCOLONNUMBERCOMMACHIPS',
+            'PICKCOLONIDCOMMABALLOONS','PICKCOLONIDCOMMACHIPS','MOVETOTHECOLONNUMBERCOMMAFRONT',
+            'MOVETOTHECOLONNUMBERCOMMALEFT','MOVETOTHECOLONNUMBERCOMMARIGHT','MOVETOTHECOLONNUMBERCOMMABACK',
+            'MOVEINDIRCOLONNUMBERCOMMANORTH','MOVEINDIRCOLONNUMBERCOMMASOUTH','MOVEINDIRCOLONNUMBERCOMMAEAST',
+            'MOVEINDIRCOLONNUMBERCOMMAWEST','JUMPINDIRCOLONNUMBERCOMMANORTH','JUMPINDIRCOLONNUMBERCOMMASOUTH',
+            'JUMPINDIRCOLONNUMBERCOMMAEAST','JUMPINDIRCOLONNUMBERCOMMAWEST','JUMPTOTHECOLONNUMBERCOMMAFRONT',
+            'JUMPTOTHECOLONNUMBERCOMMALEFT','JUMPTOTHECOLONNUMBERCOMMARIGHT','JUMPTOTHECOLONNUMBERCOMMABACK',
+            'NOPCOLON']
+
+conditions = ['FACINGCOLONNORTH','FACINGCOLONSOUTH','FACINGCOLONEAST','FACINGCOLONWEST',
+              'CANPUTCOLONNUMBERCOMMACHIPS','CANPUTCOLONNUMBERCOMMABALLOONS','CANPICKCOLONNUMBERCOMMACHIPS',
+              'CANPICKCOLONNUMBERCOMMABALLOONS','CANMOVETOTHECOLONNUMBERCOMMAFRONT',
+            'CANMOVETOTHECOLONNUMBERCOMMALEFT','CANMOVETOTHECOLONNUMBERCOMMARIGHT','CANMOVETOTHECOLONNUMBERCOMMABACK',
+            'CANMOVEINDIRCOLONNUMBERCOMMANORTH','CANMOVEINDIRCOLONNUMBERCOMMASOUTH','CANMOVEINDIRCOLONNUMBERCOMMAEAST',
+            'CANMOVEINDIRCOLONNUMBERCOMMAWEST','CANJUMPINDIRCOLONNUMBERCOMMANORTH','CANJUMPINDIRCOLONNUMBERCOMMASOUTH',
+            'CANJUMPINDIRCOLONNUMBERCOMMAEAST','CANJUMPINDIRCOLONNUMBERCOMMAWEST','CANJUMPTOTHECOLONNUMBERCOMMAFRONT',
+            'CANJUMPTOTHECOLONNUMBERCOMMALEFT','CANJUMPTOTHECOLONNUMBERCOMMARIGHT','CANJUMPTOTHECOLONNUMBERCOMMABACK',
+            'NOTCOLON']
+
     
 def encontrarProc(lista, pos):
     respuesta = []
+    nume = 0
     if lista[pos].type == 'LSPARENT':
         while pos < len(lista):
             if lista[pos].type != 'RSPARENT':
                 pos += 1
+                nume += 1
                 respuesta.append(lista[pos])
             else:
-                return respuesta
+                return respuesta, nume
         else:
             return None
 
-def formatoParametro(lista):
+def formatoParametro(lista, procedure):
     y = 0
+    ids = 0
     parametros = []
     tipo = ''
     if lista[y].type == 'VERTICALBAR':
+        parametros.append(lista[y])
         y += 1
         while tipo != 'VERTICALBAR':
             parametros.append(lista[y])
@@ -115,32 +144,242 @@ def formatoParametro(lista):
             y += 1
             if y == len(lista)-1:
                 return False
-    z = 0
+    z = 1
     barB = False
-    
-    while z < len(parametros)-2:
-        if parametros[0].type != 'ID' or parametros[len(parametros)-1].type != 'VERTICALBAR':
-            return False, parametros
-        else:
-            if parametros[z].type != 'ID' or parametros[z].type != 'COMMA':
-                return False, parametros
-            else:
-                if parametros[z].type == 'ID':
-                    if parametros[z+1].type != 'COMMA' and barB == True:
-                        return False, parametros
-                    elif parametros[z+1].type == 'VERTICALBAR':
+    while parametros[z].type != 'VERTICALBAR':
+        if parametros[z].type =='ID' or parametros[z].type == 'COMMA':
+            if parametros[z].type =='ID':
+                ids += 1
+                if parametros[z-1].type != 'COMMA':
+                    if parametros[z-1].type == 'VERTICALBAR' and barB == False:
                         barB = True
                     else:
-                        z += 1
+                        return False
                 else:
-                    if parametros[z+1].type != 'ID':
-                        return False, parametros
-                    else:
-                        z += 1
+                    z += 1
+            else:
+                if parametros[z-1].type != 'ID' or parametros[z+1].type != 'ID':
+                    return False
+                else:
+                    z += 1
+            if z == len(parametros)-1:
+                return False
+            else:
+                z+=1
+        else:
+            return False
     else:
-        return True, parametros
+        procedict[procedure] = ids
+        return True
+    
+def creaCommands(dict):
+    number = 'NUMBER'
+    coma = 'COMMA'
+    colon = 'COLON'
+    for i in dict:
+        x = ''
+        z = i.key.type
+        x = x + z + colon
+        pos = 0
+        while pos < i.value:
+            x = x + number + coma
+        else:
+            x = x + number
+        if x not in commands:
+            commands.append(x)
+
+
+def commandsExist(string):
+    if string in commands:
+        return True
+    else:
+        return False
+
+def formatoInstructions(lista):
+    barsQ = 0
+    instruct = []
+    
+    for i in lista:
+        if barsQ == 2:
+            instruct.append(i)
+        if i.type == 'VERTICALBAR':
+            barsQ += 1
+    respuesta = True
+    command = ''
+    q = 0
+    for i in instruct:
+        if i.type != 'SEMICOLON':
+            command = command + i.type
+            if i.type == 'IF':
+                if formatIf(instruct, q) != True:
+                    respuesta = False
+            elif i.type == 'WHILE':
+                if formatWhile(instruct, q) != True:
+                    respuesta = False
+            elif i.type == 'REPEAT':
+                if formatRepeat(instruct, q) != True:
+                    respuesta = False
+        else:
+            respuesta = commandsExist(command)
+            if respuesta == False:
+                respuesta = False
+            else:
+                command = ''    
+        q += 1
+    return respuesta, len(lista)
+
+def formatCommands(lista):
+    respuesta = True
+    command = ''
+    q = 0
+    for i in lista:
+        if i.type != 'SEMICOLON':
+            command = command + i.type
+            if i.type == 'IF':
+                if formatIf(lista, q) != True:
+                    respuesta = False
+            elif i.type == 'WHILE':
+                if formatWhile(lista, q) != True:
+                    respuesta = False
+            elif i.type == 'REPEAT':
+                if formatRepeat(lista, q) != True:
+                    respuesta = False
+        else:
+            respuesta = commandsExist(command)
+            if respuesta == False:
+                respuesta = False
+            else:
+                command = ''    
+        q += 1
+    return respuesta, len(lista)
 
 primer_id = False
+
+def formatIf(list, pos):
+    condition = ''
+    if list[pos].type == 'IF':
+        pos += 1
+        if list[pos].type == 'COLON':
+            pos += 1
+            while list[pos].type != 'THEN':
+                if pos < len(list):
+                    condition = condition + list[pos].type
+                    pos += 1
+                else:
+                    return False
+            else:
+                if condition not in conditions:
+                    return False
+                else:
+                    condition = ''
+                    pos += 1
+            if list[pos].type != 'COLON':
+                return False
+            else:
+                pos += 1
+            if list[pos].type != 'LSPARENT':
+                return False
+            else:
+                pos += 1
+            while list[pos].type != 'RSPARENT':
+                if pos < len(list):
+                    condition = condition + list[pos].type
+                    pos += 1
+                else:
+                    return False
+            else:
+                if condition not in commands:
+                    return False
+                else:
+                    condition = ''
+                    pos += 1
+            if list[pos].type != 'ELSE':
+                return False
+            else:
+                pos += 1
+            if list[pos].type != 'COLON':
+                return False
+            else:
+                pos += 1
+            while list[pos].type != 'RSPARENT':
+                if pos < len(list):
+                    condition = condition + list[pos].type
+                    pos += 1
+                else:
+                    return False
+            else:
+                if condition not in commands:
+                    return False
+                else:
+                    condition = ''
+                    return True
+            
+def formatWhile(list, pos):
+    condition = ''
+    if list[pos].type == 'WHILE':
+        pos += 1
+        if list[pos].type == 'COLON':
+            pos += 1
+            while list[pos].type != 'DO':
+                if pos < len(list):
+                    condition = condition + list[pos].type
+                    pos += 1
+                else:
+                    return False
+            else:
+                if condition not in conditions:
+                    return False
+                else:
+                    condition = ''
+                    pos += 1
+            if list[pos].type != 'COLON':
+                return False
+            else:
+                pos += 1
+            if list[pos].type != 'LSPARENT':
+                return False
+            else:
+                pos += 1
+            while list[pos].type != 'RSPARENT':
+                if pos < len(list):
+                    condition = condition + list[pos].type
+                    pos += 1
+                else:
+                    return False
+            else:
+                if condition not in commands:
+                    return False
+                else:
+                    condition = ''
+                    return True
+
+def formatRepeat(list, pos):
+    condition = ''
+    if list[pos].type == 'REPEAT':
+        pos += 1
+        if list[pos].type == 'COLON':
+            pos += 1
+        if list[pos].type != 'NUMBER' or list[pos].type != 'ID':
+            return False
+        else:
+            pos += 1
+        if list[pos].type != 'LSPARENT':
+            return False
+        else:
+            pos += 1
+            while list[pos].type != 'RSPARENT':
+                if pos < len(list):
+                    condition = condition + list[pos].type
+                    pos += 1
+                else:
+                    return False
+            else:
+                if condition not in commands:
+                    return False
+                else:
+                    condition = ''
+                    return True
+
 
 x = 0
 while True:
@@ -181,21 +420,56 @@ while True:
                     break
             else:
                 x += 1
-                if tokens_doc[x].type != 'ID' or tokens_doc[x+1].type != 'LSPARENT':
-                    print('Programa invalido!! - formato incorrecto')
-                    break
+                if tokens_doc[x] == 'ID':
+                    if tokens_doc[x+1].type == 'LSPARENT':
+                        x += 1
+                        tokens_doc[x-1].type = 'PROCEDURE'
+                        proce = encontrarProc(tokens_doc, x)
+                        parametros = formatoParametro(proce[0], tokens_doc[x-1])
+                        inst = formatoInstructions(proce[0])
+                        creaCommands(procedict)
+                        if parametros == False or inst[0] == False:
+                            print('Programa incorrecto!!! - formato parametros incorrectos')
+                            break
+                        else:
+                            x += inst[1]
+                    else:
+                        print('ERROR')
+                        break
                 else:
-                    tokens_doc[x].type = 'PROCEDURE'
-                    x += 1
-                proce = encontrarProc(tokens_doc, x)
-                parametros = formatoParametro(proce)
-                if parametros[0] == False:
-                    print(parametros[1])
-                    print('Programa incorrecto!!! - formato parametros incorrectos')
-                    break
-                else:
-                    print(parametros[1])
-                    print('Vamos bien!!')
+                    x+=1
+                    if tokens_doc[x].type == 'LSPARENT':
+                        x += 1
+                        while tokens_doc[x].type != 'SEMICOLON':
+                            lst = []
+                            lst.append(tokens_doc[x])
+                            x += 1
+                        else:
+                            if formatCommands(lst) == False:
+                                print('ERROR')
+                                break
+                            else:
+                                x += 1
+                    if x == len(tokens_doc)-1:
+                        if tokens_doc[x].type == 'RSPARENT':
+                            print('SINTAXIS CORRECTA')
+                            break
+                        else:
+                            print('ERROR')
+                            break
+                    else:
+                        print('ERROR')
+                        break
+                            
+                                
+                        
+                        
+                    
+                
+                
+                
+                    
+            
                     
                     
                         
@@ -204,9 +478,6 @@ while True:
     
     
     
-    
-    
-#for i in tokens_doc:
-    #print(i)
+
 
 
